@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teachable Lens — BlockFrame Deck</title>
+<!-- Fonts: Inter (display+body) + Space Grotesk (label chrome) — BlockFrame system -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* === THEME TOKENS (BlockFrame) === */
+:root{
+  --black:#000000; --white:#FFFFFF; --offwhite:#FFFDF5;
+  --pink:#FE90E8; --blue:#C0F7FE; --green:#99E885; --yellow:#F7CB46; --cream:#FFDC8B;
+  --stage-bg:#000; --slide-bg:var(--offwhite);
+  --border:4px solid #000; --border-thin:3px solid #000;
+  --sh:8px 8px 0px #000; --sh-sm:4px 4px 0px #000; --sh-hover:6px 6px 0px #000;
+  --font-display:'Inter',sans-serif; --font-label:'Space Grotesk',monospace;
+  --ease:cubic-bezier(0.16,1,0.3,1);
+}
+/* === VIEWPORT BASE (MANDATORY — full contents of viewport-base.css) === */
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--stage-bg,#000);}
+.deck-viewport{position:fixed;inset:0;overflow:hidden;background:var(--stage-bg,#000);}
+.deck-stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;background:var(--slide-bg,#fff);}
+.slide{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden;display:block;visibility:hidden;opacity:0;pointer-events:none;background:var(--slide-bg,#fff);}
+.slide.active,.slide.visible{visibility:visible;opacity:1;pointer-events:auto;z-index:1;}
+img,video,canvas,svg{max-width:100%;max-height:100%;}
+.deck-controls{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:1000;}
+@media print{html,body{width:1920px;height:auto;overflow:visible;background:#fff;}.deck-viewport{position:static;overflow:visible;background:#fff;}.deck-stage{position:static;width:auto;height:auto;transform:none!important;background:none;}.slide{position:relative;display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;width:1920px;height:1080px;break-after:page;page-break-after:always;}.slide:last-child{break-after:auto;page-break-after:auto;}.deck-controls{display:none!important;}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.2s!important;}}
+/* === BASE RESET === */
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--font-display);color:var(--black);}
+/* === ANIMATIONS (reveal on .visible) === */
+.reveal{opacity:0;transform:translateY(36px);transition:opacity .6s var(--ease),transform .6s var(--ease);}
+.slide.visible .reveal{opacity:1;transform:translateY(0);}
+.slide.visible .reveal:nth-child(1){transition-delay:.08s;}.slide.visible .reveal:nth-child(2){transition-delay:.18s;}
+.slide.visible .reveal:nth-child(3){transition-delay:.28s;}.slide.visible .reveal:nth-child(4){transition-delay:.38s;}
+.reveal-scale{opacity:0;transform:scale(.92) rotate(-1deg);transition:opacity .6s var(--ease),transform .6s var(--ease);}
+.slide.visible .reveal-scale{opacity:1;transform:scale(1) rotate(0deg);transition-delay:.2s;}
+/* === BLOCKFRAME COMPONENTS === */
+.slide-inner{width:1920px;height:1080px;padding:60px 60px 110px 60px;display:flex;flex-direction:column;justify-content:center;position:relative;}
+.label-pill{display:inline-flex;align-items:center;border:var(--border-thin);background:var(--white);box-shadow:var(--sh-sm);padding:10px 22px;font-family:var(--font-label);font-weight:600;font-size:15px;letter-spacing:.08em;text-transform:uppercase;}
+h1.hero{font-weight:900;font-size:118px;line-height:.94;letter-spacing:-.03em;text-transform:uppercase;}
+h2.head{font-weight:800;font-size:66px;line-height:1;letter-spacing:-.02em;text-transform:uppercase;}
+.card{background:var(--white);border:var(--border);box-shadow:var(--sh);padding:32px 34px;position:relative;}
+.card-sm{background:var(--white);border:var(--border-thin);box-shadow:var(--sh-sm);padding:24px 26px;position:relative;}
+.card-title{font-weight:700;font-size:24px;letter-spacing:-.01em;text-transform:uppercase;margin-bottom:10px;}
+.body{font-weight:500;font-size:21px;line-height:1.6;}
+.mono{font-family:var(--font-label);font-weight:500;font-size:17px;letter-spacing:.02em;}
+.icon-sq{width:64px;height:64px;border:var(--border-thin);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:28px;flex-shrink:0;}
+.list-num{width:40px;height:40px;border:var(--border-thin);background:var(--yellow);display:flex;align-items:center;justify-content:center;font-family:var(--font-label);font-weight:700;font-size:16px;flex-shrink:0;}
+.star{position:absolute;width:120px;height:120px;background:var(--pink);border:3px solid #000;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);}
+.stripe{background:repeating-linear-gradient(45deg,#000,#000 5px,var(--green) 5px,var(--green) 14px);border:var(--border-thin);}
+.dotgrid{background-image:radial-gradient(circle,#000 1.4px,transparent 1.4px);background-size:24px 24px;opacity:.16;}
+.btn{display:inline-flex;align-items:center;gap:12px;border:var(--border-thin);background:var(--yellow);color:#000;padding:16px 36px;font-weight:700;font-size:20px;text-transform:uppercase;box-shadow:var(--sh-sm);cursor:pointer;transition:transform .15s,box-shadow .15s;}
+.btn:hover{transform:translate(-2px,-2px);box-shadow:var(--sh-hover);}
+/* === CHROME (outside stage system, fixed) === */
+/* === CLEAN DECK — no on-screen chrome === */
+</style>
+</head>
+<body>
+<div class="deck-viewport">
+<main class="deck-stage" id="deckStage">
+
+<!-- ============ SLIDE 1 / COVER (offwhite) ============ -->
+<section class="slide active" style="background:var(--offwhite);">
+<div class="slide-inner">
+  <div class="reveal"><span class="label-pill" style="background:var(--pink);">Image Classification · Live demo</span></div>
+  <div class="reveal" style="margin-top:28px;"><h1 class="hero">Teachable<br><span style="background:var(--yellow);border:var(--border);box-shadow:var(--sh);padding:0 28px;display:inline-block;">Lens</span></h1></div>
+  <p class="reveal body" style="max-width:1050px;margin-top:26px;">Teach a classifier <b>your own categories</b> with a few photos each — or describe labels in words. Everything runs <b>locally on CPU</b>.</p>
+  <div class="reveal" style="display:flex;gap:28px;margin-top:34px;">
+    <div class="card-sm" style="flex:1;background:var(--blue);"><div class="card-title">◈ CLIP ViT-B/32</div><div class="mono">ONNX quantized · 512-d L2 embeddings · ~150 MB</div></div>
+    <div class="card-sm" style="flex:1;background:var(--green);"><div class="card-title">◉ Tiny head</div><div class="mono">LogisticRegression C=10 · balanced · 5 ms fit</div></div>
+    <div class="card-sm" style="flex:1;background:var(--cream);"><div class="card-title">▣ Gradio UI</div><div class="mono">Teach → Classify → Zero-shot · 3 tabs</div></div>
+  </div>
+</div>
+</section>
+
+<!-- ============ SLIDE 2 / ARCHITECTURE (blue) ============ -->
+<section class="slide" style="background:var(--blue);">
+<div class="slide-inner">
+  <div class="reveal"><span class="label-pill" style="background:var(--yellow);">01 · Architecture</span></div>
+  <h2 class="reveal head" style="margin-top:22px;">Frozen brain<br>+ tiny head</h2>
+  <div class="reveal" style="display:flex;gap:28px;margin-top:30px;">
+    <div class="card" style="flex:1.2;">
+      <div style="display:flex;gap:18px;align-items:center;"><div class="icon-sq" style="background:var(--pink);">V</div><div class="card-title">Vision + text encoders</div></div>
+      <div class="body" style="margin-top:12px;font-size:20px;">Center-crop 224 · normalize · <b>embed_images()</b> batch 16 · <b>embed_texts()</b> “a photo of {label}”.</div>
+      <div class="mono" style="margin-top:14px;background:#000;color:#fff;display:inline-block;padding:8px 16px;">Xenova/clip-vit-base-patch32 · CPUExecutionProvider</div>
+    </div>
+    <div class="card" style="flex:1;background:var(--cream);">
+      <div style="display:flex;gap:18px;align-items:center;"><div class="icon-sq" style="background:var(--green);">H</div><div class="card-title">FewShotHead</div></div>
+      <div class="body" style="margin-top:12px;font-size:20px;">LogisticRegression on frozen embeddings. <b>save/load</b> via <span class="mono">models/head.joblib</span>.</div>
+      <div class="mono" style="margin-top:14px;border:var(--border-thin);background:#fff;display:inline-block;padding:8px 16px;">predict → { class: prob } top-5</div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ============ SLIDE 3 / WORKFLOW (offwhite) ============ -->
+<section class="slide" style="background:var(--offwhite);">
+<div class="slide-inner">
+  <div class="reveal"><span class="label-pill" style="background:var(--green);">02 · Workflow</span></div>
+  <h2 class="reveal head" style="margin-top:18px;">Teach → train → classify</h2>
+  <div class="reveal" style="display:flex;gap:28px;margin-top:28px;">
+    <div class="card-sm" style="flex:1;background:var(--pink);">
+      <div style="display:flex;gap:14px;align-items:center;"><div class="list-num">1</div><div class="card-title">Teach</div></div>
+      <div class="body" style="font-size:19px;margin-top:10px;">Name a class, upload <b>5–20 photos</b>. Demo set: <b>idly ×10 · rice ×10</b> in <span class="mono">data/</span>.</div>
+    </div>
+    <div class="card-sm" style="flex:1;background:var(--yellow);">
+      <div style="display:flex;gap:14px;align-items:center;"><div class="list-num">2</div><div class="card-title">Train</div></div>
+      <div class="body" style="font-size:19px;margin-top:10px;">Embed all → fit head. <b>18 ms/img</b> embed · <b>5.7 ms</b> fit · train acc shown live.</div>
+    </div>
+    <div class="card-sm" style="flex:1;background:var(--blue);">
+      <div style="display:flex;gap:14px;align-items:center;"><div class="list-num">3</div><div class="card-title">Classify</div></div>
+      <div class="body" style="font-size:19px;margin-top:10px;">Upload / webcam / clipboard. Zero-shot: <span class="mono">softmax(100 · text @ image)</span>.</div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ============ SLIDE 4 / RESULTS (green) ============ -->
+<section class="slide" style="background:var(--green);">
+<div class="slide-inner">
+  <div class="reveal"><span class="label-pill" style="background:#fff;">03 · Proof · idly vs rice</span></div>
+  <h2 class="reveal head" style="margin-top:18px;">Small data, big score</h2>
+  <div class="reveal" style="display:flex;gap:26px;margin-top:28px;">
+    <div class="card-sm" style="flex:1;"><div style="font-weight:900;font-size:64px;line-height:1;">100%</div><div class="mono"><b>LEAVE-ONE-OUT</b> · 0 wrong · 20 imgs</div><div style="position:absolute;top:14px;right:14px;width:14px;height:14px;border-radius:50%;border:2px solid #000;background:var(--pink);"></div></div>
+    <div class="card-sm" style="flex:1;background:var(--yellow);"><div style="font-weight:900;font-size:64px;line-height:1;">99.4%</div><div class="mono"><b>K=5 SHOT</b> · 91.9% @ k=1 → 100% @ k=8</div><div style="position:absolute;top:14px;right:14px;width:14px;height:14px;border-radius:50%;border:2px solid #000;background:var(--blue);"></div></div>
+    <div class="card-sm" style="flex:1;background:var(--pink);"><div style="font-weight:900;font-size:64px;line-height:1;">100%</div><div class="mono"><b>ZERO-SHOT</b> · descriptive prompts beat bare names</div><div style="position:absolute;top:14px;right:14px;width:14px;height:14px;border-radius:50%;border:2px solid #000;background:var(--yellow);"></div></div>
+    <div class="card-sm" style="flex:1;background:#000;color:#fff;"><div style="font-weight:900;font-size:64px;line-height:1;">18<span style="font-size:30px;">ms</span></div><div class="mono" style="color:#fff;"><b>PER IMAGE</b> · CPU only · no GPU</div></div>
+  </div>
+  <p class="reveal mono" style="margin-top:22px;background:#fff;border:var(--border-thin);box-shadow:var(--sh-sm);display:inline-block;padding:10px 20px;">TIP: “idly vs rice” = 50% · descriptive phrases = 100% — wording matters in zero-shot.</p>
+</div>
+</section>
+
+<!-- ============ SLIDE 5 / CLOSE (black) ============ -->
+<section class="slide" style="background:#000;">
+<div class="slide-inner" style="align-items:center;text-align:center;">
+  <div class="reveal" style="background:var(--offwhite);border:4px solid #fff;box-shadow:12px 12px 0px var(--yellow);padding:64px 80px;max-width:1420px;">
+    <span class="label-pill" style="background:var(--pink);">04 · Run it</span>
+    <h2 class="reveal" style="font-weight:900;font-size:96px;line-height:.95;letter-spacing:-.03em;text-transform:uppercase;margin-top:20px;">Try it live</h2>
+    <p class="reveal mono" style="margin-top:14px;font-size:20px;">pip install -r requirements.txt · python app.py → http://localhost:7860</p>
+    <div class="reveal" style="display:flex;gap:20px;justify-content:center;margin-top:26px;">
+      <span class="mono" style="border:var(--border-thin);padding:10px 20px;background:var(--blue);">NO PYTORCH</span>
+      <span class="mono" style="border:var(--border-thin);padding:10px 20px;background:var(--green);">NO GPU</span>
+      <span class="mono" style="border:var(--border-thin);padding:10px 20px;background:var(--cream);">NO INTERNET AFTER 1ST RUN</span>
+    </div>
+    <div class="reveal" style="margin-top:30px;"><span class="btn">▶ Launch Teachable Lens</span></div>
+  </div>
+</div>
+</section>
+
+</main>
+</div>
+<script>
+/* === SLIDE CONTROLLER (fixed 1920x1080 stage) === */
+class SlidePresentation{
+  constructor(){
+    this.slides=document.querySelectorAll('.slide');
+    this.stage=document.getElementById('deckStage');
+    this.i=0; this.scale(); this.show(0);
+    window.addEventListener('resize',()=>this.scale());
+    document.addEventListener('keydown',e=>{
+      if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();this.next();}
+      if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();this.prev();}
+    });
+    let x0=null; document.addEventListener('touchstart',e=>x0=e.touches[0].clientX,{passive:true});
+    document.addEventListener('touchend',e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0;if(Math.abs(dx)>50)(dx<0?this.next():this.prev());x0=null;},{passive:true});
+  }
+  scale(){const f=Math.min(window.innerWidth/1920,window.innerHeight/1080);const x=(window.innerWidth-1920*f)/2,y=(window.innerHeight-1080*f)/2;this.stage.style.transform=`translate(${x}px,${y}px) scale(${f})`;}
+  show(n){this.i=Math.max(0,Math.min(n,this.slides.length-1));this.slides.forEach((s,k)=>{s.classList.toggle('active',k===this.i);s.classList.toggle('visible',k===this.i);});}
+  next(){this.show(this.i+1);} prev(){this.show(this.i-1);}
+}
+new SlidePresentation();
+</script>
+</body>
+</html>
